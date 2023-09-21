@@ -116,17 +116,14 @@ public class PiDigits {
         if (start < 0) {
             throw new RuntimeException("Invalid Interval");
         }
-
         if (count < 0) {
             throw new RuntimeException("Invalid Interval");
         }
-
         byte[] digits = new byte[count];
         ArrayList<PiThread> threads = new ArrayList<PiThread>();
         int numbers = count/N;
         int uneven = count%N;
         int lastone = start;
-
         for(int i = 0; i<N; i++){
             if(i == N-1){
                 if(uneven != 0){
@@ -136,7 +133,6 @@ public class PiDigits {
             threads.add(new PiThread(lastone, numbers));
             lastone += numbers; 
         }
-
         for(PiThread thread : threads){
             thread.start();
         }  
@@ -155,8 +151,6 @@ public class PiDigits {
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
-
-
         return digits;
     }
 

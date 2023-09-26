@@ -1,6 +1,9 @@
 package edu.eci.arsw.math;
 
 import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 
 ///  <summary>
 ///  An implementation of the Bailey-Borwein-Plouffe formula for calculating hexadecimal
@@ -12,7 +15,6 @@ public class PiDigits {
 
     private static int DigitsPerSum = 8;
     private static double Epsilon = 1e-17;
-
     
     /**
      * Returns a range of hexadecimal digits of pi.
@@ -137,6 +139,37 @@ public class PiDigits {
             thread.start();
         }  
         int digit = 0;
+        
+        Timer timer = new Timer();
+
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run(){
+				for(PiThread thread : threads){
+                    synchronized(thread){
+                        thread.setState("STOP");
+                        System.out.println("El hilo: " + thread.getName() + "Encontro " + thread.getTotalDigits() + " Digitos");
+                    }
+                    
+				}
+                
+				System.out.println("Presione enter para continuar. ");
+				String read;
+				Scanner scanner = new Scanner(System.in);
+				read = scanner.nextLine();
+				if(read != null){
+					scanner.close();
+					System.out.println("Continuando Busqueda...");
+					for(PiThread thread : threads){
+                        synchronized(thread){
+                            thread.setState("RUN");
+                        }
+					}
+				}
+	
+			}
+		}, 5000);
+
         try{
             for(PiThread thread : threads){
                 thread.join();

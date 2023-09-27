@@ -14,13 +14,15 @@ package edu.eci.arsw.math;
 public class Main {
 
     public static void main(String a[]) {
-        String prueba1 = bytesToHex(PiDigits.getDigits(1, 100000,10));
-        //String prueba2 = bytesToHex(PiDigits.getDigits(0, 10, 5));
-        //String prueba3 = bytesToHex(PiDigits.getDigits(1, 100, 10));
+        String prueba1 = bytesToHex(PiDigits.getDigits(1, 50000,10));
+        String prueba2 = bytesToHex(PiDigits.getDigits(0, 10, 5));
+        String prueba3 = bytesToHex(PiDigits.getDigits(1, 100, 10));
 
         System.out.println(prueba1);
-        //System.out.println(prueba2);
-        //System.out.println(prueba3);
+        System.out.println(prueba2);
+        System.out.println(prueba3);
+        System.exit(0);
+
     }
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();

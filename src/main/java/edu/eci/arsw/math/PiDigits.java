@@ -15,9 +15,11 @@ public class PiDigits {
 
     private static int DigitsPerSum = 8;
     private static double Epsilon = 1e-17;
-    
+    private static Object lock = new Object();
+
     /**
      * Returns a range of hexadecimal digits of pi.
+     * 
      * @param start The starting location of the range.
      * @param count The number of digits to return
      * @return An array containing the hexadecimal digits.
@@ -123,65 +125,66 @@ public class PiDigits {
         }
         byte[] digits = new byte[count];
         ArrayList<PiThread> threads = new ArrayList<PiThread>();
-        int numbers = count/N;
-        int uneven = count%N;
-        int lastone = start;
-        for(int i = 0; i<N; i++){
-            if(i == N-1){
-                if(uneven != 0){
+        int numbers = count / N; //Cantidad de digitos que cada hilo va a calcular.
+        int uneven = count % N; //Si la division da un residuo entonces lo almacenamos.
+        int lastone = start; //Guardamos donde empezo el ultimo hilo.
+        for (int i = 0; i < N; i++) {
+            if (i == N - 1) { //Si es el ultimo hilo, entonces le agregamos el residuo a los numeros que debe calcular.
+                if (uneven != 0) {
                     numbers += uneven;
                 }
             }
-            threads.add(new PiThread(lastone, numbers));
-            lastone += numbers; 
+            threads.add(new PiThread(lastone, numbers, lock)); //Inicializamos el hilo y lo agregamos al ArrayList.
+            lastone += numbers; //Guardamos la nueva ultima posicion.
         }
-        for(PiThread thread : threads){
+        for (PiThread thread : threads) {
             thread.start();
-        }  
+        }
         int digit = 0;
-        
-        Timer timer = new Timer();
 
-		timer.schedule(new TimerTask() {
-			@Override
-			public void run(){
-				for(PiThread thread : threads){
-                    synchronized(thread){
-                        thread.setState("STOP");
-                        System.out.println("El hilo: " + thread.getName() + "Encontro " + thread.getTotalDigits() + " Digitos");
-                    }
-                    
-				}
-                
-				System.out.println("Presione enter para continuar. ");
-				String read;
-				Scanner scanner = new Scanner(System.in);
-				read = scanner.nextLine();
-				if(read != null){
-					scanner.close();
-					System.out.println("Continuando Busqueda...");
-					for(PiThread thread : threads){
-                        synchronized(thread){
-                            thread.setState("RUN");
+        Timer timer = new Timer(); //Timer para esperar.
+
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                for (PiThread thread : threads) {
+                    thread.setStop(true); //Avisamos a cada hilo que debe detenerse.
+                }
+                for (PiThread thread : threads) {
+                    System.out.println(
+                            "El hilo: " + thread.getName() + " Encontro " + thread.getTotalDigits() + " Digitos.");//Obtenemos el numero de digitos encontrados por cada hilo.
+                }
+                System.out.println("Presione enter para continuar. ");
+                String read;
+                Scanner scanner = new Scanner(System.in);
+                read = scanner.nextLine();//Esperamos la accion del usuario.
+                if (read != null) {
+                    scanner.close();
+                    System.out.println("Continuando Busqueda...");
+                    synchronized (lock) {
+                        for (PiThread thread : threads) {
+                            thread.setStop(false);//Cambiamos el valor de la variable en todos los hilos
                         }
-					}
-				}
-	
-			}
-		}, 5000);
+                        lock.notifyAll();//Reanudamos a todos los hilos para terminar con el ejercicio.
+                    }
 
-        try{
-            for(PiThread thread : threads){
+                }
+
+            }
+        }, 5000); //Valor que se quiera esperar (milisegundos).
+
+        try {
+            for (PiThread thread : threads) {
                 thread.join();
             }
-            for(int j = 0; j < N; j++){
-                byte[] threadBytes = threads.get(j).getDigits();
-                for(int k = 0; k < threadBytes.length; k++){
-                    digits[digit] = threadBytes[k];
+            for (int j = 0; j < N; j++) {
+                byte[] threadBytes = threads.get(j).getDigits(); //Solicita los digitos encontrados en bytes
+                for (int k = 0; k < threadBytes.length; k++) { //Recorremos los digitos retornados por el hilo
+                    digits[digit] = threadBytes[k]; //Asignamos el valor del byte a la lista del orquestador.
                     digit++;
                 }
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         return digits;

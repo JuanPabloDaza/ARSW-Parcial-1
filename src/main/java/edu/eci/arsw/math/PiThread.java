@@ -1,52 +1,48 @@
 package edu.eci.arsw.math;
 
-public class PiThread extends Thread{
+public class PiThread extends Thread {
     private int start;
     private int count;
     private int totalDigits = 0;
     private byte[] digits;
-    private String state = "RUN";
+    private Object lock;
+    private boolean stop = false;
     private static int DigitsPerSum = 8;
     private static double Epsilon = 1e-17;
 
-    public PiThread(int start, int count){
-        this.start=start;
-        this.count=count;
+    public PiThread(int start, int count, Object lock) {
+        this.start = start;
+        this.count = count;
+        this.lock = lock;
         digits = new byte[count];
     }
 
-    public void run(){
+    public void run() {
         if (start < 0) {
             throw new RuntimeException("Invalid Interval");
         }
-
         if (count < 0) {
             throw new RuntimeException("Invalid Interval");
         }
-
         double sum = 0;
-
         for (int i = 0; i < count; i++) {
-            if(state.equals("RUN")){
-                if (i % DigitsPerSum == 0) {
-                    sum = 4 * sum(1, start)
-                            - 2 * sum(4, start)
-                            - sum(5, start)
-                            - sum(6, start);
-    
-                    start += DigitsPerSum;
-                }
-    
-                sum = 16 * (sum - Math.floor(sum));
-                digits[i] = (byte) sum;
-                totalDigits++;
-            }else{
-                try {
-                    synchronized(state){
-                        state.wait();
+            if (i % DigitsPerSum == 0) {
+                sum = 4 * sum(1, start)
+                        - 2 * sum(4, start)
+                        - sum(5, start)
+                        - sum(6, start);
+                start += DigitsPerSum;
+            }
+            sum = 16 * (sum - Math.floor(sum));
+            digits[i] = (byte) sum;
+            totalDigits++;
+            if (stop) { //Si se necesita parar se verifica la variable.
+                synchronized (lock) {
+                    try {
+                        lock.wait();
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
                     }
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
                 }
             }
         }
@@ -56,10 +52,8 @@ public class PiThread extends Thread{
         double sum = 0;
         int d = m;
         int power = n;
-
         while (true) {
             double term;
-
             if (power > 0) {
                 term = (double) hexExponentModulo(power, d) / d;
             } else {
@@ -68,12 +62,10 @@ public class PiThread extends Thread{
                     break;
                 }
             }
-
             sum += term;
             power--;
             d += 8;
         }
-
         return sum;
     }
 
@@ -82,43 +74,32 @@ public class PiThread extends Thread{
         while (power * 2 <= p) {
             power *= 2;
         }
-
         int result = 1;
-
         while (power > 0) {
             if (p >= power) {
                 result *= 16;
                 result %= m;
                 p -= power;
             }
-
             power /= 2;
-
             if (power > 0) {
                 result *= result;
                 result %= m;
             }
         }
-
         return result;
     }
 
-    public byte[] getDigits(){
+    public byte[] getDigits() { //Retorna los digitos que el hilo ha encontrado.
         return digits;
     }
 
-    public int getTotalDigits(){
+    public int getTotalDigits() { //Retorna el numero de digitos que el hilo ha encontrado
         return totalDigits;
     }
 
-    public void setState(String state){
-        if(state.equals("RUN")){
-            this.state = state;
-            this.state.notify();
-        }else{
-            this.state = state;
-        }
-            
+    public void setStop(boolean stop) { //Cambia la variable "stop", con la intencion de detener o reanudar los hilos.
+        this.stop = stop;
     }
 
 }
